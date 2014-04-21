@@ -4,13 +4,25 @@
 #include "cocos2d.h"
 USING_NS_CC;
 
+namespace SCROLLTAG
+{
+	enum
+	{
+		BOTTOM1 =0,
+		BOTTOM2,
+		TOP1,
+		TOP2
+	}
+
+};
 class MainGameScene : public cocos2d::Layer
 {
 public:
 	MainGameScene(void);
 
-	virtual bool init();
 	static cocos2d::Scene* CreateScene();
+	virtual bool init();
+	virtual void update(float dt);
 
 	template <class T>
 	void AddScore();
@@ -20,8 +32,11 @@ public:
 
 private:
 	int iScore_;
+	Point bottomImgSize_;
+	Point topImgSize_;
+	Sprite *pTurtle;
 	LabelTTF *pScoreLabel;
-
+	ParallaxNode *paraNode;
 };
 
 #endif
