@@ -90,5 +90,6 @@ void MainMenuScene::menuCloseCallback(Ref* pSender)
 void MainMenuScene::menuGoToGame(Ref* pSender)
 {
 	Scene *pScene = MainGameScene::CreateScene();
+	pScene->getPhysicsWorld()->setDebugDrawMask(PhysicsWorld::DEBUGDRAW_ALL);
 	Director::getInstance()->replaceScene(pScene);
 }

@@ -11,7 +11,7 @@ CharacterSprite::~CharacterSprite(void)
 {
 }
 
-cocos2d::Sprite*
+Sprite*
 CharacterSprite::CreateSprite()
 {
 	Sprite *Turtle = Sprite::create("Img/Tortoise_Green_1.png");

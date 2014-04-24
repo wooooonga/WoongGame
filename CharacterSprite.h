@@ -8,9 +8,10 @@ class CharacterSprite : public cocos2d::Sprite
 public:
 	CharacterSprite(void);
 	~CharacterSprite(void);
-	static cocos2d::Sprite* CreateSprite();
+	static Sprite* CreateSprite();
 	virtual bool init();
-	CREATE_FUNC(CharacterSprite);
+
+
 };
 
 #endif

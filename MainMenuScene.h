@@ -1,4 +1,4 @@
-#ifndef __MAINMENUSCENE_H__
+	#ifndef __MAINMENUSCENE_H__
 #define __MAINMENUSCENE_H__
 
 #include "cocos2d.h"
@@ -17,7 +17,7 @@ private:
 	void menuGoToGame(cocos2d::Ref* pSender);
     
     // implement the "static create()" method manually 
-    CREATE_FUNC(MainMenuScene); // layer의 create를 만들어 주는 함수
+    CREATE_FUNC(MainMenuScene); // new와 여러가지 
 };
 
 #endif // __MAINMENUSCENE_H__
