@@ -2,19 +2,21 @@
 #define __MAINGAMESCENE_H__
 
 #include "cocos2d.h"
+#include "Tube.h"
 USING_NS_CC;
 
-namespace SCROLLTAG
+
+namespace TAGNAME
 {
 	enum
 	{
-		BOTTOM1 =0,
-		BOTTOM2,
-		TOP1,
-		TOP2
+		TURTLE = 1,
+		BOTTOMBOX = 2
+
 	};
 
 };
+
 class MainGameScene : public cocos2d::Layer
 {
 
@@ -30,23 +32,32 @@ public:
 
 
 	EventListenerTouchOneByOne* _touchListener;
-	bool onTouchBegan(Touch* touch, Event* event);
-	void onTouchEnded(Touch* touch, Event* event);
-
+	EventListenerPhysicsContact* _contactListener;
+	virtual bool onTouchBegan(Touch* touch, Event* event);
+	virtual void onTouchEnded(Touch* touch, Event* event);
+	bool onContactBegin(const PhysicsContact& contact);
+	void GoBackToMain();
 
 private:
 	template <class T>
 	void AddScore();
 	void BirdAction();
+	void GameFinish();
+	void TurtleDead();
 
 
 	const PhysicsMaterial MATERIAL_NONE;
 	
-	PhysicsWorld *m_world;
-	Sprite* pTube_;
+
 	int iScore_;
-	Point startingPoint_;
+	float yVelolcity;
+	PhysicsWorld *m_world;
+	Tube* pTube_;
+	Point staticImgSize_;
 	Point bottomImgSize_;
+	Point topImgSize_;
+	Point startingPoint_;
+
 	Sprite *pTurtle;
 	LabelTTF *pScoreLabel;
 	ParallaxNode *paraNodeFirst_;

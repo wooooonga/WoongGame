@@ -3,7 +3,11 @@
 USING_NS_CC;
 
 Tube::Tube() 
-	:capImgSize_x(64.f)	{}
+	:capImgSize_x(64.f),
+	 capImgSize_y(32.f),
+	 tubeImgSize_x(64.f),
+	 tubeImgSize_y(52.f),
+	 vBottomSprite(NULL) {}
 Tube::~Tube() {}
 
 Tube* 
@@ -37,17 +41,16 @@ Tube::CreateTube()
 	int bottomNum	= 0 ,
 		topNum		= 0;
 	srand(time(NULL));
-	int ChoiceTube	= std::rand() * 100 % 3;
-	
+	int ChoiceTube	= std::rand() % 5;
 	switch(ChoiceTube)
 	{
-	case TUBETYPE::ThreeByFour :	
-		bottomNum	= 3;
-		topNum		= 4;
+	case TUBETYPE::OneBySix :	
+		bottomNum	= 1;
+		topNum		= 6;
 		break;
-	case TUBETYPE::FourByThree :
-		bottomNum	= 4;
-		topNum		= 3;
+	case TUBETYPE::SixByOne :
+		bottomNum	= 6;
+		topNum		= 1;
 		break;
 	case TUBETYPE::TwoByFive :
 		bottomNum	= 2;
@@ -56,8 +59,11 @@ Tube::CreateTube()
 	case TUBETYPE::FiveByTwo :
 		bottomNum	= 5;
 		topNum		= 2;
+		break;	
+	case TUBETYPE::ThreeByTwo :
+		bottomNum	= 3;
+		topNum		= 4;
 		break;
-
 	default:
 		break;
 	}
@@ -65,45 +71,61 @@ Tube::CreateTube()
 	for(int i = 0; i < bottomNum; i++)
 	{
 		Sprite* bottom = Sprite::create("Img/MarioTube_Body.png");
-		bottom->setPosition(StartingBottomPnt_.x, StartingBottomPnt_.y + (i * bottom->getBoundingBox().size.height));
-		bottom->setPosition( Point(StartingBottomPnt_.x, StartingBottomPnt_.y + (i * bottom->getBoundingBox().size.height)));
-		bottom->setAnchorPoint(Point(0.f, 0.f));
-		PhysicsBody *tubeBody = PhysicsBody::createBox(bottom->getContentSize());
-		tubeBody->setMass(0);
-		bottom->setPhysicsBody(tubeBody);
+		bottom->setPosition(StartingBottomPnt_.x + (tubeImgSize_x / 2), StartingBottomPnt_.y + (tubeImgSize_y / 2)+(i * tubeImgSize_y));
 		this->addChild(bottom);
-		vBottomSprite.push_back(bottom);
 	}
-
-	positionForCap = vBottomSprite.back()->getPosition();
+	positionForCap = Point(StartingBottomPnt_.x, StartingBottomPnt_.y + (tubeImgSize_y * bottomNum));
 	Sprite* pTubeCap = Sprite::create("Img/MarioTube_Top.png");
-	pTubeCap->setAnchorPoint(Point(0.f, 0.f));
-	pTubeCap->setPosition(positionForCap.x, positionForCap.y + pTubeCap->getBoundingBox().size.height);
+	pTubeCap->setPosition(positionForCap.x + (tubeImgSize_x / 2), positionForCap.y);
+
+	PhysicsBody *tubeBody = PhysicsBody::createEdgeBox(Size(tubeImgSize_x, (tubeImgSize_y * bottomNum) + capImgSize_y), 
+														MATERIAL_NONE, 1, Point(0, -(tubeImgSize_y * bottomNum) / 2));
+	tubeBody->setMass(0);
+	tubeBody->setDynamic(false);
+	tubeBody->setContactTestBitmask(0x1<<1);
+	pTubeCap->setPhysicsBody(tubeBody);
+	pTubeCap->setTag(2);
 	this->addChild(pTubeCap);
-	vBottomSprite.push_back(pTubeCap);
+	vBottomSprite = pTubeCap;
 
 	for(int i = 0; i < topNum; i++)
 	{
 		Sprite* top = Sprite::create("Img/MarioTube_Body.png");
-		top->setPosition(StartingTopPnt_.x, StartingTopPnt_.y - (i * top->getBoundingBox().size.height));
-		top->setAnchorPoint(Point(0.f, 1.f));
-		vTopSprite.push_back(top);
-		top->setPosition(Point(StartingTopPnt_.x, StartingTopPnt_.y - (i * top->getBoundingBox().size.height)));
+		top->setPosition(Point(StartingTopPnt_.x + top->getContentSize().width / 2, StartingTopPnt_.y - (top->getContentSize().height / 2) -(i * top->getBoundingBox().size.height)));
 		this->addChild(top);
-
 	}
-	positionForCap = vTopSprite.back()->getPosition();
+	positionForCap = Point(StartingTopPnt_.x, StartingTopPnt_.y -(tubeImgSize_y* topNum));
 	Sprite* pTubeCap_r = Sprite::create("Img/MarioTube_Down.png");
-	pTubeCap_r->setAnchorPoint(Point(0.f, 1.f));
-	pTubeCap_r->setPosition(positionForCap.x, positionForCap.y - pTubeCap_r->getBoundingBox().size.height);
-	this->addChild(pTubeCap_r);
-	vTopSprite.push_back(pTubeCap_r);
+	pTubeCap_r->setPosition(positionForCap.x + (tubeImgSize_x / 2), positionForCap.y);
 
+	PhysicsBody *tubeBodyTop = PhysicsBody::createEdgeBox(Size(tubeImgSize_x, (tubeImgSize_y * topNum) + capImgSize_y),
+														MATERIAL_NONE, 1, Point(0, ((tubeImgSize_y * topNum)) / 2 ));
+	tubeBodyTop->setMass(0);
+	tubeBodyTop->setDynamic(false);
+	tubeBodyTop->setContactTestBitmask(0x1<<1);
+	pTubeCap_r->setPhysicsBody(tubeBodyTop);
+	pTubeCap_r->setTag(2);
+	this->addChild(pTubeCap_r);
+	vTopSprite = pTubeCap_r;
+}
+
+Point
+Tube::GetTubePosition()
+{
+	if(vBottomSprite != NULL) 
+	{
+		return vBottomSprite->getPhysicsBody()->getPosition();
+	}
+	else
+		return Point(0, 0);
+		
 }
 
 void
 Tube::update(float dt)
 {
+	vBottomSprite->setPosition(vBottomSprite->getPosition().x + (dt * 60 * -1 ), vBottomSprite->getPosition().y);
+	vTopSprite->setPosition(vTopSprite->getPosition().x + (dt * 60 * -1 ), vTopSprite->getPosition().y);
 	this->setPosition(this->getPosition().x + (dt * 60 * -1), this->getPosition().y);
 	if(this->getPosition().x + endingPoint_ + capImgSize_x < -1)
 	{

@@ -8,10 +8,11 @@ namespace TUBETYPE
 {
 	enum
 	{
-		ThreeByFour = 0,
-		FourByThree,
+		OneBySix = 0,
+		SixByOne,
 		TwoByFive,
-		FiveByTwo
+		FiveByTwo,
+		ThreeByTwo
 	};
 };
 class Tube : public Layer
@@ -19,28 +20,29 @@ class Tube : public Layer
 public:	
 	Tube();
 	~Tube();
+
 	static Tube* CreateTube(Point, Point, float);
 	virtual bool init();
 	virtual void update(float dt);
 
 	void SetPoints(Point, Point, float);
 	void CreateTube();
+	Point GetTubePosition();
 private:
-	typedef std::vector<Sprite*> BottomVector;
-	BottomVector vBottomSprite;
-	typedef std::vector<Sprite*> TopVector;
-	TopVector vTopSprite;
+	Sprite* vBottomSprite;
+	Sprite* vTopSprite;
+	const PhysicsMaterial MATERIAL_NONE;
+
 
 	Point StartingTopPnt_;
 	Point StartingBottomPnt_;
 	float endingPoint_;
 	float capImgSize_x;
+	float capImgSize_y;
+	float tubeImgSize_x;
+	float tubeImgSize_y;
 
 
-	Sprite* pTubebody_;
-	Sprite* pTubebodyRev_;
-	Sprite* pTubeTop_;
-	Sprite* pTubeBottom_;
 
 
 };
