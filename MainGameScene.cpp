@@ -19,7 +19,7 @@ MainGameScene::CreateScene()
 {
 	Scene *scene = Scene::createWithPhysics();
 	scene->getPhysicsWorld()->setDebugDrawMask(PhysicsWorld::DEBUGDRAW_ALL);
-	scene->getPhysicsWorld()->setGravity(Point(0.0f, -700.0f));
+	scene->getPhysicsWorld()->setGravity(Point(0.0f, -500.0f));
 	MainGameScene *layer = MainGameScene::create();
 	layer->setPhyWorld(scene->getPhysicsWorld());
 	scene->addChild(layer);
@@ -106,6 +106,14 @@ MainGameScene::init()
 	BottomBoxNode->setTag(TAGNAME::BOTTOMBOX);
 	this->addChild(BottomBoxNode);
 
+	auto *bodyFrame = PhysicsBody::createEdgeBox(Size(staticImgSize_.x, staticImgSize_.y), MATERIAL_NONE, 4, Point(staticImgSize_.x / 2, (staticImgSize_.y / 2)));
+	bodyFrame->setLinearDamping(0);
+	Node *frameBoxNode = Node::create();
+	frameBoxNode->setPosition(Point(startingPoint_.x, startingPoint_.y));
+	frameBoxNode->setPhysicsBody(bodyFrame);
+	frameBoxNode->setTag(TAGNAME::FRAMEBOX);
+	this->addChild(frameBoxNode);
+
 	//////////////////////////
 	//add Character
 	//////////////////////////
@@ -115,6 +123,7 @@ MainGameScene::init()
 	PhysicsBody *turtleBody = PhysicsBody::createBox(pTurtle->getContentSize());
 	turtleBody->setLinearDamping(0);
 	turtleBody->setDynamic(true);
+	turtleBody->setMass(2.f);
 	turtleBody->setContactTestBitmask(0x1<<0);
 	pTurtle->setPhysicsBody(turtleBody);
 	pTurtle->setTag(TAGNAME::TURTLE);
@@ -135,9 +144,9 @@ MainGameScene::init()
 void
 MainGameScene::update(float dt)
 {
-	yVelolcity = clampf(pTurtle->getPhysicsBody()->getVelocity().y, -1 * 10, -200.f);
-	cocos2d::log("%lu", yVelolcity);
-	pTurtle->getPhysicsBody()->setVelocityLimit(yVelolcity);
+	yVelolcity = clampf(pTurtle->getPhysicsBody()->getVelocity().y, -500.f, 400.f);
+	pTurtle->getPhysicsBody()->setVelocity(Point(0 ,yVelolcity));
+
 	if((int)(pTube_->GetTubePosition().x) == (int)(startingPoint_.x + (staticImgSize_.x / 2)))
 	{
 		AddScore<char>();
@@ -153,27 +162,22 @@ MainGameScene::update(float dt)
 	{
 		paraNodeSecond_->setPosition(-1, 0);
 	}
-
 }
 bool
 MainGameScene::onTouchBegan(Touch* touch, Event* event)
 {
 	BirdAction();
-	cocos2d::log("touch start");
 	return true;
 }
 void
 MainGameScene::onTouchEnded(Touch* touch, Event* event)
 {
-	cocos2d::log("touch ended");
-
 }
 bool
 MainGameScene::onContactBegin(const PhysicsContact& contact)
 {
 	int Tube	= contact.getShapeA()->getBody()->getNode()->getTag();
 	int Turtle	= contact.getShapeB()->getBody()->getNode()->getTag();
-	cocos2d::log("collision Seccess turtle : %d , tube : %d",Turtle,Tube);
 	if( (1 == Turtle && 2 == Tube) || (2 == Turtle && 1 == Tube))
 		GameFinish();
 	return true;
@@ -195,8 +199,8 @@ MainGameScene::AddScore()
 void
 MainGameScene::BirdAction()
 {
-	//pTurtle->getPhysicsBody()->setVelocity(Point(0,100));
-	pTurtle->getPhysicsBody()->applyImpulse(Point(0,400.f));
+	pTurtle->getPhysicsBody()->applyImpulse(Point(0, 400.f));
+	cocos2d::log("applyImpulse : %f",pTurtle->getPhysicsBody()->getVelocity().y);
 }
 void
 MainGameScene::TurtleDead()
@@ -220,7 +224,9 @@ MainGameScene::GameFinish()
 	this->unscheduleUpdate();
 	pTube_->unscheduleUpdate();
 	Node *bottomBoxForCollision = (Node*)getChildByTag(TAGNAME::BOTTOMBOX);
+	Node *FrameBoxForCollision = (Node*)getChildByTag(TAGNAME::FRAMEBOX);
 	this->removeChild(bottomBoxForCollision, true);
+	this->removeChild(FrameBoxForCollision, true);
 
 	//////////////////////////
 	// Actions before going to main menu

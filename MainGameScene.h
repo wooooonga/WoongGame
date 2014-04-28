@@ -11,8 +11,8 @@ namespace TAGNAME
 	enum
 	{
 		TURTLE = 1,
-		BOTTOMBOX = 2
-
+		BOTTOMBOX,
+		FRAMEBOX
 	};
 
 };
