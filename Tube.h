@@ -29,10 +29,9 @@ public:
 	void CreateTube();
 	Point GetTubePosition();
 private:
-	Sprite* vBottomSprite;
-	Sprite* vTopSprite;
+	Node* pCollisionTubeBottom;
+	Node* pCollisionTubeTop;
 	const PhysicsMaterial MATERIAL_NONE;
-
 
 	Point StartingTopPnt_;
 	Point StartingBottomPnt_;
@@ -41,10 +40,7 @@ private:
 	float capImgSize_y;
 	float tubeImgSize_x;
 	float tubeImgSize_y;
-
-
-
-
+	
 };
 
 
