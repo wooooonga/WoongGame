@@ -1,16 +1,20 @@
 #include "MainGameScene.h"
 #include "MainMenuScene.h"
-#include "CharacterSprite.h"
 #include "Tube.h"
+#include "GlobalVar.h"
+#include "ScoreBoard.h"
+#include "SimpleAudioEngine.h"
 
 USING_NS_CC;
+using namespace CocosDenshion;
 
 MainGameScene::MainGameScene(void)
 	:iScore_(0),
 	staticImgSize_(320, 568),
 	bottomImgSize_(909, 120),
-	topImgSize_(909, 270)
-{}
+	topImgSize_(909, 270),
+	gameState_(GAMESTATE::READY)	{}
+
 MainGameScene::~MainGameScene(void)
 {}
 
@@ -29,17 +33,14 @@ bool
 MainGameScene::init()
 {
 	Size visibleSize_ = Director::getInstance()->getWinSize();
-	this->scheduleUpdate();
-	this->setTouchEnabled(true);
+	SimpleAudioEngine::getInstance()->playBackgroundMusic("Sound/ExampleBGM2.mp3", true);
 
 	//////////////////////////
 	//add background spite - static background
 	//////////////////////////
 	Sprite *pStaticBG = Sprite::create("Img/MarioBackground-static.png");
-	pStaticBG->setAnchorPoint(Point(0, 0));
-	pStaticBG->setPosition(Point(visibleSize_.width / 2, 0));
+	pStaticBG->setPosition(staticImgSize_.x / 2, staticImgSize_.y / 2);
 	this->addChild(pStaticBG, -1);
-	startingPoint_ = Point(pStaticBG->getPosition().x, pStaticBG->getPosition().y);
 
 	//////////////////////////
 	//add background spite - bottom
@@ -62,22 +63,20 @@ MainGameScene::init()
 	//////////////////////////
 	paraNodeFirst_	= ParallaxNode::create();
 	paraNodeSecond_	= ParallaxNode::create();
-	paraNodeFirst_->addChild(pScrollBottom1, 1, Point(2.0f, 0.0f), Point(visibleSize_.width / 2, 0));
-	paraNodeSecond_->addChild(pScrollBottom2, 1, Point(2.0f, 0.0f), Point(visibleSize_.width / 2 + bottomImgSize_.x - 1, 0));
-	paraNodeFirst_->addChild(pScrollTop1, 1, Point(2.0f, 0.0f), Point(visibleSize_.width / 2, staticImgSize_.y));
-	paraNodeSecond_->addChild(pScrollTop2, 1, Point(2.0f, 0.0f), Point(visibleSize_.width / 2 + topImgSize_.x - 1, staticImgSize_.y));
+	paraNodeFirst_->addChild(pScrollBottom1, 1, Point(2.0f, 0.0f), Point(0, 0));
+	paraNodeSecond_->addChild(pScrollBottom2, 1, Point(2.0f, 0.0f), Point(bottomImgSize_.x - 1, 0));
+	paraNodeFirst_->addChild(pScrollTop1, 1, Point(2.0f, 0.0f), Point(0, staticImgSize_.y));
+	paraNodeSecond_->addChild(pScrollTop2, 1, Point(2.0f, 0.0f), Point(topImgSize_.x - 1, staticImgSize_.y));
 	this->addChild(paraNodeFirst_, -1);
 	this->addChild(paraNodeSecond_, -1);
 
 	//////////////////////////
 	//add Score
 	//////////////////////////
-	pScoreLabel = LabelTTF::create("Score : 0", "Arial", 40);
+	pScoreLabel = LabelBMFont::create("Score\n0", "fonts/FlappyFont.fnt", visibleSize_.width / 1.5, kCCTextAlignmentCenter);
 	pScoreLabel->setPosition(visibleSize_.width / 2, visibleSize_.height / 4 * 3);
-	pScoreLabel->setColor(Color3B(0, 255, 255));
+	pScoreLabel->setColor(Color3B(0, 0, 255));
 	this->addChild(pScoreLabel, 5);
-	int scoreTemp = 0;
-
 
 	//////////////////////////
 	// make touch enable. 
@@ -96,32 +95,58 @@ MainGameScene::init()
     _eventDispatcher->addEventListenerWithSceneGraphPriority(_contactListener, this);
 
 	//////////////////////////
-	//Physics world
-	auto *body1 = PhysicsBody::createEdgeBox(Size(staticImgSize_.x, staticImgSize_.y / 100 * 10), 
-											MATERIAL_NONE, 3, Point(staticImgSize_.x / 2, (staticImgSize_.y / 100 * 5)));
-	body1->setLinearDamping(0);
-	Node *BottomBoxNode = Node::create();
-	BottomBoxNode->setPosition(Point(startingPoint_.x, startingPoint_.y));
-	BottomBoxNode->setPhysicsBody(body1);
-	BottomBoxNode->setTag(TAGNAME::BOTTOMBOX);
-	this->addChild(BottomBoxNode);
-
-	auto *bodyFrame = PhysicsBody::createEdgeBox(Size(staticImgSize_.x, staticImgSize_.y), MATERIAL_NONE, 4, Point(staticImgSize_.x / 2, (staticImgSize_.y / 2)));
-	bodyFrame->setLinearDamping(0);
-	Node *frameBoxNode = Node::create();
-	frameBoxNode->setPosition(Point(startingPoint_.x, startingPoint_.y));
-	frameBoxNode->setPhysicsBody(bodyFrame);
-	frameBoxNode->setTag(TAGNAME::FRAMEBOX);
-	this->addChild(frameBoxNode);
+	//add turtle
+	//////////////////////////
+	SpriteFrameCache::getInstance()->addSpriteFramesWithFile("Img/Tortoise_Red.plist");
+	pTurtle = Sprite::create("Img/Tortoise_Red_1.png");
+	pTurtle->setPosition(staticImgSize_.x / 3, staticImgSize_.y / 2);
+	pTurtle->setTag(TAGNAME::TURTLE);
+	this->addChild(pTurtle, 10);
 
 	//////////////////////////
-	//add Character
+	//add HowToPlay img
 	//////////////////////////
-	pTurtle = CharacterSprite::CreateSprite();
-	pTurtle->setPosition(pStaticBG->getPosition().x + (staticImgSize_.x / 2),
-						pStaticBG->getPosition().y + (staticImgSize_.y / 2));
-	PhysicsBody *turtleBody = PhysicsBody::createBox(pTurtle->getContentSize());
-	turtleBody->setLinearDamping(0);
+	Sprite* pHowToPlay = Sprite::create("Img/Tap.png");
+	pHowToPlay->setPosition(visibleSize_.width / 2, visibleSize_.height /2);
+	pHowToPlay->setTag(TAGNAME::HOWTOPLAY);
+	this->addChild(pHowToPlay);
+
+	//////////////////////////
+	// Arrow sprite 
+	//////////////////////////
+	pArrowSprite_ = Sprite::create("Img/Arrow.png");
+	pArrowSprite_->setPosition(staticImgSize_.x / 10 * 9, -50);
+	this->addChild(pArrowSprite_);
+
+	return true;
+}
+
+void
+MainGameScene::GameStart()
+{
+	this->scheduleUpdate();
+	this->removeChildByTag(TAGNAME::TURTLE);
+	this->removeChildByTag(TAGNAME::HOWTOPLAY);
+
+	//////////////////////////
+	//add turtle physics body
+	//////////////////////////
+	pTurtle = Sprite::create("Img/Tortoise_Red_1.png");
+	pTurtle->setPosition(staticImgSize_.x / 3, staticImgSize_.y / 2);
+	cocos2d::Vector<SpriteFrame*> aniFrames;
+	char str[50] = {};
+	for(int i = 1; i <= 2; i++)
+	{
+		sprintf(str, "Tortoise_Red_%d.png", i);
+		SpriteFrame *frame = SpriteFrameCache::getInstance()->getSpriteFrameByName(str);
+		aniFrames.pushBack(frame);
+	}
+	Animation *animation = Animation::createWithSpriteFrames(aniFrames, 0.3f);
+	Animate *animate = Animate::create(animation);
+	auto *actionFly = RepeatForever::create(animate);
+	pTurtle->runAction(actionFly);
+
+	PhysicsBody *turtleBody = PhysicsBody::createBox(pTurtle->getContentSize(),PhysicsMaterial(.5f, 0.3f, 1.f));
 	turtleBody->setDynamic(true);
 	turtleBody->setMass(2.f);
 	turtleBody->setContactTestBitmask(0x1<<0);
@@ -130,30 +155,51 @@ MainGameScene::init()
 	this->addChild(pTurtle, 10);
 
 	//////////////////////////
+	// pressed Backbutton
+	//////////////////////////
+	_keyboardListener = EventListenerKeyboard::create();
+	_keyboardListener->onKeyReleased = CC_CALLBACK_2(MainGameScene::onKeyReleased, this);
+	_eventDispatcher->addEventListenerWithSceneGraphPriority(_keyboardListener, this);
+
+	//////////////////////////
+	//Physics world
+	//////////////////////////
+	auto *body1 = PhysicsBody::createEdgeBox(Size(staticImgSize_.x, staticImgSize_.y / 100 * 10), 
+											MATERIAL_NONE, 3, Point(staticImgSize_.x / 2, (staticImgSize_.y / 100 * 5)));
+	body1->setLinearDamping(0);
+	Node *BottomBoxNode = Node::create();
+	BottomBoxNode->setPosition(0, 0);
+	BottomBoxNode->setPhysicsBody(body1);
+	BottomBoxNode->setTag(TAGNAME::BOTTOMBOX);
+	this->addChild(BottomBoxNode);
+
+	auto *bodyFrame = PhysicsBody::createEdgeBox(Size(staticImgSize_.x, staticImgSize_.y), MATERIAL_NONE, 4, Point(staticImgSize_.x / 2, (staticImgSize_.y / 2)));
+	bodyFrame->setLinearDamping(0);
+	Node *frameBoxNode = Node::create();
+	frameBoxNode->setPosition(0, 0);
+	frameBoxNode->setPhysicsBody(bodyFrame);
+	frameBoxNode->setTag(TAGNAME::FRAMEBOX);
+	this->addChild(frameBoxNode);
+
+	//////////////////////////
 	// Tube sprite 
 	//////////////////////////
-	Point tubeTopPoint(pStaticBG->getPosition().x + staticImgSize_.x, 
-							pStaticBG->getPosition().y + staticImgSize_.y);
-	Point tubeBottomPoint(pStaticBG->getPosition().x + staticImgSize_.x, 
-							pStaticBG->getPosition().y + bottomImgSize_.y / 2);
+	Point tubeBottomPoint(staticImgSize_.x, staticImgSize_.y / 10);
+	Point tubeTopPoint(staticImgSize_.x, staticImgSize_.y);
 	float endingPoint = staticImgSize_.x;
 	pTube_ = Tube::CreateTube(tubeTopPoint, tubeBottomPoint, endingPoint);
 	this->addChild(pTube_);
-	return true;
+
 }
+
 void
 MainGameScene::update(float dt)
 {
-	yVelolcity = clampf(pTurtle->getPhysicsBody()->getVelocity().y, -500.f, 400.f);
+	yVelolcity = clampf(pTurtle->getPhysicsBody()->getVelocity().y, -500.f, 300.f);
 	pTurtle->getPhysicsBody()->setVelocity(Point(0 ,yVelolcity));
-
-	if((int)(pTube_->GetTubePosition().x) == (int)(startingPoint_.x + (staticImgSize_.x / 2)))
-	{
-		AddScore<char>();
-	}
 	//Check if sprite is out of bound
-	paraNodeFirst_->setPosition(paraNodeFirst_->getPosition().x -1, paraNodeFirst_->getPosition().y);
-	paraNodeSecond_->setPosition(paraNodeSecond_->getPosition().x -1, paraNodeSecond_->getPosition().y);
+	paraNodeFirst_->setPosition(paraNodeFirst_->getPosition().x -1, 0);
+	paraNodeSecond_->setPosition(paraNodeSecond_->getPosition().x -1, 0);
 	if(paraNodeFirst_->getPosition().x + (bottomImgSize_.x / 2) < 0) // scrollSpeed is 2.0f. so ImgSize divide by 2
 	{
 		paraNodeFirst_->setPosition(bottomImgSize_.x / 2 - 1, 0);
@@ -162,10 +208,39 @@ MainGameScene::update(float dt)
 	{
 		paraNodeSecond_->setPosition(-1, 0);
 	}
+	if(pTube_->GetTubePosition().x < staticImgSize_.x / 3 && pTube_->GetWaitingTubeState() == false)
+	{
+		AddScore<char>();
+		TubeNum pTubeNum = pTube_->SetNewTubeType();
+		SetArrowPosition(pTubeNum);
+	}
 }
+
+void
+MainGameScene::SetArrowPosition(TubeNum tubeNum)
+{
+	float lastTopTubePos = staticImgSize_.y - (tubeNum.top * 52.f);
+	float lastBottomTubePos = (staticImgSize_.y / 10) + (tubeNum.bottom * 52.f);
+
+	float arrowPosY = (lastTopTubePos - lastBottomTubePos) / 2;
+	pArrowSprite_->setPosition(pArrowSprite_->getPosition().x, lastBottomTubePos + arrowPosY);
+}
+
+void
+MainGameScene::BirdAction()
+{
+	pTurtle->getPhysicsBody()->applyImpulse(Point(0, 400.f));
+	//SimpleAudioEngine::getInstance()->playEffect("Sound/flyTurtle.mp3");
+}
+
 bool
 MainGameScene::onTouchBegan(Touch* touch, Event* event)
 {
+	if(gameState_ == GAMESTATE::READY)
+	{
+		GameStart();
+		gameState_ = GAMESTATE::START;
+	}
 	BirdAction();
 	return true;
 }
@@ -176,11 +251,24 @@ MainGameScene::onTouchEnded(Touch* touch, Event* event)
 bool
 MainGameScene::onContactBegin(const PhysicsContact& contact)
 {
-	int Tube	= contact.getShapeA()->getBody()->getNode()->getTag();
-	int Turtle	= contact.getShapeB()->getBody()->getNode()->getTag();
-	if( (1 == Turtle && 2 == Tube) || (2 == Turtle && 1 == Tube))
+	int object1	= contact.getShapeA()->getBody()->getNode()->getTag();
+	int object2	= contact.getShapeB()->getBody()->getNode()->getTag();
+	if((TAGNAME::TURTLE == object1 && TAGNAME::TUBE == object2) || 
+		(TAGNAME::TUBE == object1 && TAGNAME::TURTLE == object2))
+	{
+		SimpleAudioEngine::getInstance()->playEffect("Sound/tubeCollision.mp3");
 		GameFinish();
+	}
 	return true;
+}
+void
+MainGameScene::onKeyReleased(EventKeyboard::KeyCode keyCode, Event* event)
+{
+	if(keyCode == EventKeyboard::KeyCode::KEY_BACKSPACE)
+	{
+		GoBackToMain();
+		Director::getInstance()->getEventDispatcher()->removeEventListener(_keyboardListener);
+	}
 }
 
 template <class T>
@@ -191,32 +279,45 @@ MainGameScene::AddScore()
 	{
 		pScoreLabel->setString("Score Exceed 100 above");
 	}
+
 	T coinScore[100] = {0};
-	sprintf(coinScore, "Score: %d", ++iScore_);
+	sprintf(coinScore, "Score\n%d", ++iScore_);
 	pScoreLabel->setString(coinScore);
 }
 
-void
-MainGameScene::BirdAction()
-{
-	pTurtle->getPhysicsBody()->applyImpulse(Point(0, 400.f));
-	cocos2d::log("applyImpulse : %f",pTurtle->getPhysicsBody()->getVelocity().y);
-}
+
 void
 MainGameScene::TurtleDead()
 {
 	pTurtle->stopAllActions();
-	pTurtle->setTexture(Director::getInstance()->getTextureCache()->addImage("Img/Tortoise_Brown_1.png"));
+	pTurtle->setTexture("Img/Tortoise_Brown_1.png");
+	pTurtle->getPhysicsBody()->applyImpulse(Point(0, 400));
+	pTurtle->getPhysicsBody()->setAngularVelocity(3);
+	FiniteTimeAction *flipTurtle = FlipY::create(true);
+	ActionInterval *delayTime = DelayTime::create(4.0);
+	CallFunc *createScoreBoard = CallFunc::create(CC_CALLBACK_0(MainGameScene::CreateScoreBoard, this));
+	CallFunc *goBackToMain = CallFunc::create(CC_CALLBACK_0(MainGameScene::GoBackToMain, this));
+	FiniteTimeAction *seq = Sequence::create(flipTurtle, createScoreBoard, delayTime,goBackToMain, NULL);
+	pTurtle->runAction(seq);
 }
+
+void
+MainGameScene::CreateScoreBoard()
+{
+	ScoreBoard* scoreBoard = ScoreBoard::CreateScoreBoard(iScore_);
+	this->addChild(scoreBoard, 30);
+}
+
 void
 MainGameScene::GameFinish()
 {
-
+	SimpleAudioEngine::getInstance()->stopBackgroundMusic();
 	//////////////////////////
 	//delete eventListeners.
 	//////////////////////////
 	Director::getInstance()->getEventDispatcher()->removeEventListener(_touchListener);
 	Director::getInstance()->getEventDispatcher()->removeEventListener(_contactListener);
+
 
 	//////////////////////////
 	// unscheldule Updates and Remove bottom Box.
@@ -232,20 +333,17 @@ MainGameScene::GameFinish()
 	// Actions before going to main menu
 	//////////////////////////
 	TurtleDead();
-	pTurtle->getPhysicsBody()->applyImpulse(Point(0, 100), Point(pTurtle->getPosition().x, pTurtle->getPosition().y));
-	ActionInterval *movingUp = MoveBy::create(1, Point(0, 100));
-	FiniteTimeAction *flipTurtle = FlipY::create(true);
-	FiniteTimeAction *spawnturtle = Spawn::create(movingUp, flipTurtle, NULL);
-	ActionInterval *delayTime = DelayTime::create(4.0);
-	CallFunc *goBackToMain = CallFunc::create(CC_CALLBACK_0(MainGameScene::GoBackToMain, this));
-	FiniteTimeAction *seq = Sequence::create(spawnturtle, delayTime,goBackToMain, NULL);
-	pTurtle->runAction(seq);
 
 }
 
 void
 MainGameScene::GoBackToMain()
 {
+	if(SimpleAudioEngine::getInstance()->isBackgroundMusicPlaying()) 
+		SimpleAudioEngine::getInstance()->stopBackgroundMusic();
 	Scene *pScene = MainMenuScene::CreateScene();
 	Director::getInstance()->replaceScene(pScene);
 }
+
+
+

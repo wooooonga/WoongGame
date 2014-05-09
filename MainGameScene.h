@@ -3,19 +3,8 @@
 
 #include "cocos2d.h"
 #include "Tube.h"
+
 USING_NS_CC;
-
-
-namespace TAGNAME
-{
-	enum
-	{
-		TURTLE = 1,
-		BOTTOMBOX,
-		FRAMEBOX
-	};
-
-};
 
 class MainGameScene : public cocos2d::Layer
 {
@@ -25,16 +14,19 @@ public:
 	~MainGameScene(void);
 
 	void setPhyWorld(PhysicsWorld* world) {m_world = world;}
-	static cocos2d::Scene* CreateScene();
+	static Scene* CreateScene();
 	virtual bool init();
 	virtual void update(float dt);
+
 	CREATE_FUNC(MainGameScene);
 
 
 	EventListenerTouchOneByOne* _touchListener;
 	EventListenerPhysicsContact* _contactListener;
+	EventListenerKeyboard* _keyboardListener;
 	virtual bool onTouchBegan(Touch* touch, Event* event);
 	virtual void onTouchEnded(Touch* touch, Event* event);
+	virtual void onKeyReleased(EventKeyboard::KeyCode keyCode, Event* event);
 	bool onContactBegin(const PhysicsContact& contact);
 	void GoBackToMain();
 
@@ -42,12 +34,14 @@ private:
 	template <class T>
 	void AddScore();
 	void BirdAction();
+	void GameStart();
 	void GameFinish();
 	void TurtleDead();
-
+	void SetArrowPosition(TubeNum);
+	void CreateScoreBoard();
+	TubeNum SetNewTubeType();
 
 	const PhysicsMaterial MATERIAL_NONE;
-	
 
 	int iScore_;
 	float yVelolcity;
@@ -56,12 +50,15 @@ private:
 	Point staticImgSize_;
 	Point bottomImgSize_;
 	Point topImgSize_;
-	Point startingPoint_;
-
 	Sprite *pTurtle;
-	LabelTTF *pScoreLabel;
+	Sprite *pArrowSprite_;
+	LabelBMFont *pScoreLabel;
 	ParallaxNode *paraNodeFirst_;
 	ParallaxNode *paraNodeSecond_;
+
+	int gameState_;
 };
+
+
 
 #endif

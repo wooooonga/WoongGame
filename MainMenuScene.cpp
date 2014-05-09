@@ -1,5 +1,6 @@
 #include "MainMenuScene.h"
 #include "MainGameScene.h"
+#include "ScoreBoard.h"
 
 USING_NS_CC;
 
@@ -21,6 +22,7 @@ Scene* MainMenuScene::CreateScene()
 // on "init" you need to initialize your instance
 bool MainMenuScene::init()
 {
+	this->setTouchEnabled(true);
     //////////////////////////////
     // 1. super init first
     if ( !Layer::init() )
@@ -51,15 +53,29 @@ bool MainMenuScene::init()
 
     /////////////////////////////
     // 3. add your codes below...
+	LabelBMFont *pBMfontStart = LabelBMFont::create("Start", "fonts/FlappyFont.fnt", visibleSize.width / 1.5, kCCTextAlignmentCenter);
+	LabelBMFont *pBMfontScore = LabelBMFont::create("HighScore", "fonts/FlappyFont.fnt", visibleSize.width / 1.5, kCCTextAlignmentCenter);
+	LabelBMFont *pBMfontClose = LabelBMFont::create("Close", "fonts/FlappyFont.fnt", visibleSize.width / 1.5, kCCTextAlignmentCenter);
 
-	MenuItemFont *pLabelStart = MenuItemFont::create("Start", this, menu_selector(MainMenuScene::menuGoToGame));
-	MenuItemFont *pLabelClose = MenuItemFont::create("Close", this, menu_selector(MainMenuScene::menuCloseCallback));
+	//MenuItemFont *pLabelStart = MenuItemFont::create("Start", this, menu_selector(MainMenuScene::menuGoToGame));
+	//MenuItemFont *pLabelClose = MenuItemFont::create("Close", this, menu_selector(MainMenuScene::menuCloseCallback));
+	MenuItemLabel *pLabelStart = MenuItemLabel::create(pBMfontStart, this, menu_selector(MainMenuScene::menuGoToGame));
+	MenuItemLabel *pLabelScore = MenuItemLabel::create(pBMfontScore, this, menu_selector(MainMenuScene::ShowHighScore));
+	MenuItemLabel *pLabelClose = MenuItemLabel::create(pBMfontClose, this, menu_selector(MainMenuScene::menuCloseCallback));
 	pLabelStart->setColor(ccc3(255, 0, 0));
 	pLabelClose->setColor(ccc3(0, 255, 0));
-	Menu *pMenu = Menu::create(pLabelStart, pLabelClose, NULL);
-	pMenu->alignItemsHorizontally();
-
+	Menu* pMenu = Menu::create(pLabelStart, pLabelClose, pLabelScore, NULL);
+	pMenu->setPosition(visibleSize.width/2 + origin.x, visibleSize.height/2 + origin.y);
+	pMenu->alignItemsVertically();
+	pMenu->setTag(MENU);
 	this->addChild(pMenu, 1);
+
+	//////////////////////////
+	// pressed Backbutton
+	//////////////////////////
+	_keyboardListener = EventListenerKeyboard::create();
+	_keyboardListener->onKeyReleased = CC_CALLBACK_2(MainMenuScene::onKeyReleased, this);
+	_eventDispatcher->addEventListenerWithSceneGraphPriority(_keyboardListener, this);
 
     // add "MainMenuScene" splash screen"
 	Sprite* bgSprite = Sprite::create("Img/MarioBackground-static.png");
@@ -86,10 +102,36 @@ void MainMenuScene::menuCloseCallback(Ref* pSender)
     exit(0);
 #endif
 }
+void MainMenuScene::ShowHighScore(cocos2d::Ref* pSender)
+{
+	ScoreBoard* scoreBoard = ScoreBoard::CreateScoreBoard(100000);
+	scoreBoard->setTag(SCOREBOARD);
+	this->addChild(scoreBoard, 30);
+	Menu* pMenu = (Menu*) this->getChildByTag(MENU);
+	pMenu->setVisible(false);
+}
+void
+MainMenuScene::onKeyReleased(EventKeyboard::KeyCode keyCode, Event* event)
+{
+	if(keyCode == EventKeyboard::KeyCode::KEY_BACKSPACE)
+	{
+		ScoreBoard* scoreBoard = (ScoreBoard*) this->getChildByTag(SCOREBOARD);
+		if(scoreBoard != NULL)
+		{
+			this->removeChildByTag(SCOREBOARD);
+			Menu* pMenu = (Menu*) this->getChildByTag(MENU);
+			pMenu->setVisible(true);
+		}
+		else
+		{
+		Director::getInstance()->end();
+		}
+	}
+}
 
 void MainMenuScene::menuGoToGame(Ref* pSender)
 {
 	Scene *pScene = MainGameScene::CreateScene();
-	pScene->getPhysicsWorld()->setDebugDrawMask(PhysicsWorld::DEBUGDRAW_ALL);
+	pScene->getPhysicsWorld()->setDebugDrawMask(PhysicsWorld::DEBUGDRAW_NONE);
 	Director::getInstance()->replaceScene(pScene);
 }
